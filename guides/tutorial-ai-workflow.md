@@ -1,31 +1,28 @@
-# Tutorial: How an AI Uses Ix (Step by Step)
+# Tutorial: Mapping and Understanding Your Codebase with Ix
 
-This walkthrough shows exactly how an LLM assistant uses Ix to understand a codebase — and why it saves thousands of tokens compared to reading files directly.
-
-## The Scenario
-
-You open Claude Code in a new project for the first time. The project is a payment processing system with 200+ files. You ask: *"How does payment processing work?"*
-
-Without Ix, Claude would need to `Grep` for "payment", read dozens of files, and piece things together. That's thousands of lines of code burned as context tokens.
-
-With Ix, here's what happens:
+This tutorial walks you through using Ix from scratch — mapping a project, exploring its architecture, and understanding how everything connects. Each step builds on the last, whether you're using Ix yourself from the terminal or plugging it into an LLM like Claude.
 
 ---
 
-## Step 1: Map the codebase
+## Setting the Scene
+
+You have a project. Maybe it's something you built, maybe you just joined a team and inherited it. Either way, there are hundreds of files and you need to understand how everything fits together.
+
+Let's walk through it.
+
+---
+
+## Step 1: Map Your Project
+
+Start here. Always.
 
 ```sh
+cd ~/my-project
 ix map ./src
 ```
 
-**What this does:**
-1. Walks every file in `./src`
-2. Parses each file with Tree-Sitter (TypeScript, Python, Java, etc.)
-3. Extracts every class, function, method, import, and call relationship
-4. Builds a versioned knowledge graph in ArangoDB
-5. Runs community detection to identify architectural regions
+Ix walks through every source file, parses it with Tree-Sitter, and extracts the structure — every class, function, method, import, and call relationship. Then it runs community detection to group files into systems based on how they actually connect to each other.
 
-**Output:**
 ```
 System: payment-core (confidence: 0.94)
   ├── src/payments/processor.ts
@@ -44,33 +41,45 @@ System: api-routes (confidence: 0.88)
   └── src/routes/webhooks.ts
 ```
 
-**Tokens saved:** Instead of reading 200 files (~50,000 tokens), the AI now knows the system structure in ~200 tokens.
+You now have a bird's-eye view of the project. Not based on folder structure — based on how the code actually couples together. Files that talk to each other end up in the same system.
+
+**Why this matters for you:** You immediately see the major pieces of the system without opening a single file. You know where to look.
+
+**Why this matters for an LLM:** Instead of reading hundreds of files to build a mental model, the LLM gets the architectural layout in a few lines. It can reason about the system at the right level of abstraction instead of drowning in implementation details.
 
 ---
 
-## Step 2: Find the entry point
+## Step 2: Search for What You're Interested In
+
+Now you want to dig into something specific. Say you're interested in how payments work.
 
 ```sh
 ix search PaymentProcessor --kind class
 ```
 
-**Output:**
 ```
 PaymentProcessor (class) — src/payments/processor.ts:12-89  [score: 100]
-PaymentProcessorTest (class) — test/payments/processor.test.ts:5-120  [score: 60]
 ```
 
-**Tokens saved:** One targeted result instead of grepping through every file and reading matches.
+Ix searches the knowledge graph — not file contents. Results are ranked by how well they match, and you can filter by kind (class, function, method, file) to cut through noise.
+
+**Try it yourself:**
+```sh
+ix search validate --kind function --path src/payments/
+```
+
+This scopes the search to functions named "validate" within the payments directory. Targeted, fast, no guessing.
 
 ---
 
-## Step 3: Understand the class
+## Step 3: Understand What You Found
+
+You found `PaymentProcessor`. What is it? What does it do? What depends on it?
 
 ```sh
 ix explain PaymentProcessor
 ```
 
-**Output:**
 ```
 PaymentProcessor (class) — src/payments/processor.ts:12-89
 
@@ -89,20 +98,29 @@ PaymentProcessor (class) — src/payments/processor.ts:12-89
     - RefundService.initiateRefund
 
   Why it matters:
-    Central to payment flow — 8 downstream consumers depend on this.
+    Central to payment flow — changes here affect 8 downstream consumers.
 ```
 
-**Tokens saved:** Full structural understanding in ~150 tokens. Without Ix, the AI would read the entire file (~500 tokens) plus grep for usages across the codebase (~2000+ tokens).
+Without reading a single line of code, you now know:
+- What methods this class has
+- Where each one lives (line numbers)
+- Who uses this class
+- How important it is in the system
+
+**Why this matters for you:** You're not guessing. You know what this class does, what it contains, and what depends on it — before you open the file.
+
+**Why this matters for an LLM:** The LLM can answer questions about the class's role and relationships without reading the source. It only reads code when it needs to reason about specific implementation logic.
 
 ---
 
-## Step 4: See what it contains
+## Step 4: See the Structure
+
+Want a quick layout of what's inside?
 
 ```sh
 ix overview PaymentProcessor
 ```
 
-**Output:**
 ```
 PaymentProcessor (class)
   System path: payment-core → processor
@@ -118,15 +136,18 @@ PaymentProcessor (class)
     chargeGateway — calls external gateway
 ```
 
+`overview` is the quick glance. `explain` is the deep dive. Use whichever fits what you need in the moment.
+
 ---
 
-## Step 5: Check blast radius before making changes
+## Step 5: Check What Would Break
+
+You're thinking about changing `PaymentProcessor`. Before you touch anything:
 
 ```sh
 ix impact PaymentProcessor --depth 2
 ```
 
-**Output:**
 ```
 PaymentProcessor — 8 entities at risk
 
@@ -143,17 +164,22 @@ PaymentProcessor — 8 entities at risk
     Server.start — src/server.ts:12
 ```
 
-**Tokens saved:** The AI knows exactly what will break — no need to trace imports across files manually.
+This is the blast radius. Ix traces the dependency graph outward from your target and categorizes everything by risk level — what's directly coupled, what's one hop away, what's further out.
+
+**Why this matters for you:** You know exactly what to test after making a change. No surprises.
+
+**Why this matters for an LLM:** When you ask "can I refactor this?", the LLM can give you a real answer — not a guess. It knows the downstream impact.
 
 ---
 
-## Step 6: Follow a specific dependency chain
+## Step 6: Follow the Chain
+
+Want to see how `processPayment` flows into the rest of the system?
 
 ```sh
 ix trace processPayment --downstream
 ```
 
-**Output:**
 ```
 processPayment (method)
   ├── validateCard (calls)
@@ -165,15 +191,26 @@ processPayment (method)
       └── WebhookHandler.onPaymentEvent (calls)
 ```
 
+This is the call tree — what `processPayment` touches when it runs. You can also go upstream (what calls it) or find the path between two symbols:
+
+```sh
+# What calls processPayment?
+ix trace processPayment --upstream
+
+# How does AuthProvider connect to DatabaseClient?
+ix trace AuthProvider --to DatabaseClient
+```
+
 ---
 
-## Step 7: Find the hotspots
+## Step 7: Find the Important Parts
+
+Which classes are the most central to the system?
 
 ```sh
 ix rank --by dependents --kind class --top 5
 ```
 
-**Output:**
 ```
 1. PaymentProcessor    8 dependents
 2. AuthProvider        6 dependents
@@ -182,17 +219,27 @@ ix rank --by dependents --kind class --top 5
 5. Logger              4 dependents
 ```
 
-These are the classes where changes have the most ripple effects.
+These are the load-bearing walls. Changes here ripple the farthest. If you're onboarding, these are the classes to understand first.
+
+You can rank by different metrics:
+```sh
+# Most-called functions
+ix rank --by callers --kind function --top 10
+
+# Largest files (most members)
+ix rank --by members --kind file --top 10
+```
 
 ---
 
-## Step 8: Read specific code when needed
+## Step 8: Read the Code
+
+Now — and only now — you read source code. But instead of opening whole files, you read just the piece you need:
 
 ```sh
 ix read processPayment
 ```
 
-**Output:**
 ```
 src/payments/processor.ts:24-45
 
@@ -201,37 +248,52 @@ src/payments/processor.ts:24-45
   26 │   if (!validation.valid) {
   27 │     return { success: false, error: validation.error };
   28 │   }
-  ...
-  45 │ }
+  29 │
+  30 │   const charge = await this.chargeGateway(request);
+  31 │   if (!charge.success) {
+  32 │     return { success: false, error: charge.error };
+  33 │   }
+  34 │
+  35 │   this.emit('payment.completed', { id: charge.id, amount: request.amount });
+  36 │   return { success: true, chargeId: charge.id };
+  37 │ }
 ```
 
-Only now — after understanding the architecture, dependencies, and impact — does the AI read actual source code. And it reads only the specific method it needs, not entire files.
+You already know what this method does in the system, who calls it, what it calls, and what would break if you changed it. Reading the code is the final step — confirming implementation details — not the starting point.
 
 ---
 
-## Step 9: Keep the graph current
+## Step 9: Keep It Current
 
+The graph is only useful if it stays up to date. Two options:
+
+**Watch mode** — auto-ingests on file save:
 ```sh
 ix watch
 ```
 
-Or if using Claude Code, edited files are auto-ingested via hooks — no manual step needed.
+**Claude Code hooks** — if you're using Claude Code, Ix hooks auto-ingest every file you edit. No manual step. The graph stays current as you work.
+
+When you come back tomorrow, the graph is still there. You don't start over. And when your LLM starts a new session, it can pick up exactly where the last one left off — it queries the graph instead of re-reading your entire codebase.
 
 ---
 
-## Token Savings Summary
+## Putting It All Together
 
-| Task | Without Ix | With Ix |
-|------|-----------|---------|
-| Understand project structure | ~50,000 tokens (read files) | ~200 tokens (ix map) |
-| Find a class | ~5,000 tokens (grep + read) | ~50 tokens (ix search) |
-| Understand a class | ~2,500 tokens (read file + usages) | ~150 tokens (ix explain) |
-| Check blast radius | ~10,000 tokens (trace imports manually) | ~200 tokens (ix impact) |
-| Follow dependencies | ~8,000 tokens (read file chains) | ~100 tokens (ix trace) |
-| **Total for this workflow** | **~75,000 tokens** | **~700 tokens** |
+Here's the flow:
 
-That's a **99% reduction** in context tokens for the same understanding. This means:
-- More room in the context window for actual work
-- Faster responses
-- Better answers because the AI isn't overwhelmed with raw code
-- Works across sessions — the graph persists, so session 2 starts where session 1 left off
+```
+ix map       → See the whole system (architecture)
+ix search    → Find what you're looking for
+ix explain   → Understand what it is and why it matters
+ix overview  → Quick structural layout
+ix impact    → Know what breaks before you change it
+ix trace     → Follow the dependency chain
+ix rank      → Find the most important pieces
+ix read      → Read only the code you actually need
+ix watch     → Keep it all current
+```
+
+Each command gives you a different lens on the same codebase. Start wide with `map`, narrow down with `search` and `explain`, analyze with `impact` and `trace`, and only read code when you need the specifics.
+
+This works the same whether you're typing commands yourself or an LLM is using them on your behalf. The graph is the shared understanding that persists across sessions, across tools, and across people working on the same project.
