@@ -26,6 +26,9 @@ Documentation for [Ix](https://github.com/ix-infrastructure/Ix) — persistent c
 - [docker](commands/docker.md) — Manage backend containers
 - [Advanced Commands](commands/advanced.md) — callers, imports, contains, etc.
 
+### Tutorials
+- [How an AI Uses Ix (Step by Step)](guides/tutorial-ai-workflow.md) — Full walkthrough showing token savings
+
 ### Guides
 - [Using Ix with Claude Code](guides/claude-code.md)
 - [Understanding the Knowledge Graph](guides/knowledge-graph.md)
