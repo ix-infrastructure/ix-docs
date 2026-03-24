@@ -1,40 +1,41 @@
 # Ix Documentation
 
-Documentation for [Ix](https://github.com/ix-infrastructure/Ix) — persistent code memory for LLM assistants.
+Ix gives your codebase a persistent memory. It parses your source files into a knowledge graph that you and your AI assistant can query across sessions.
 
-## Contents
+## Get Started
 
-### Getting Started
-- [What is Ix?](overview.md)
-- [Installation](installation.md)
-- [Quick Start](quickstart.md)
+1. [What is Ix?](overview.md)
+2. [Installation](installation.md)
+3. [Tutorial: Map and Explore a Codebase](guides/tutorial.md)
 
-### Command Reference
-- [map](commands/map.md) — Map codebase architecture
-- [search](commands/search.md) — Search the knowledge graph
-- [explain](commands/explain.md) — Explain a symbol
-- [impact](commands/impact.md) — Blast-radius analysis
-- [overview](commands/overview.md) — Structural summary
-- [locate](commands/locate.md) — Find symbol definitions
-- [read](commands/read.md) — Read source code
-- [trace](commands/trace.md) — Follow dependencies
-- [inventory](commands/inventory.md) — List entities by kind
-- [rank](commands/rank.md) — Hotspot discovery
-- [watch](commands/watch.md) — Auto-ingest on file change
-- [status](commands/status.md) — Backend health
-- [upgrade](commands/upgrade.md) — Upgrade Ix
-- [docker](commands/docker.md) — Manage backend containers
-- [Advanced Commands](commands/advanced.md) — callers, imports, contains, etc.
+## Guides
 
-### Tutorials
-- [How an AI Uses Ix (Step by Step)](guides/tutorial-ai-workflow.md) — Full walkthrough showing token savings
-
-### Guides
 - [Using Ix with Claude Code](guides/claude-code.md)
 - [Understanding the Knowledge Graph](guides/knowledge-graph.md)
 - [GitHub Ingestion](guides/github-ingestion.md)
 
-### Reference
+## Commands
+
+| Command | What it does |
+|---------|-------------|
+| [map](commands/map.md) | Parse and map codebase architecture |
+| [search](commands/search.md) | Search the knowledge graph |
+| [explain](commands/explain.md) | Understand a symbol's role and importance |
+| [impact](commands/impact.md) | See what breaks if you change something |
+| [overview](commands/overview.md) | Quick structural summary |
+| [locate](commands/locate.md) | Find where a symbol is defined |
+| [read](commands/read.md) | Read source code by symbol or line range |
+| [trace](commands/trace.md) | Follow how things connect |
+| [inventory](commands/inventory.md) | List entities by kind |
+| [rank](commands/rank.md) | Find the most important pieces |
+| [watch](commands/watch.md) | Auto-update the graph on file changes |
+| [status](commands/status.md) | Check backend health |
+| [upgrade](commands/upgrade.md) | Upgrade Ix to the latest version |
+| [docker](commands/docker.md) | Manage backend containers |
+| [Advanced](commands/advanced.md) | callers, imports, contains, depends, and more |
+
+## Reference
+
 - [Architecture](reference/architecture.md)
 - [Supported Languages](reference/languages.md)
 - [Configuration](reference/configuration.md)

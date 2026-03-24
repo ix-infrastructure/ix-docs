@@ -29,7 +29,7 @@ Graph is up to date.
 If files have changed since last ingestion:
 
 ```
-⚠ 3 file(s) changed since last ingest:
+! 3 file(s) changed since last ingest:
   src/auth/provider.ts
   src/routes/users.ts
   src/middleware/cors.ts
